@@ -3,7 +3,17 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-const cors = require('cors');
+var dotenv = require('dotenv').config();
+var cors = require('cors')
+
+const mongoose = require('mongoose')
+mongoose.connect('mongodb://localhost:27017/iamsoinspiring', { useNewUrlParser: true });
+
+var db = mongoose.connection;
+db.on('error', console.error.bind(console, 'connection error:'));
+db.once('open', function() {
+  // we're connected!
+});
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
