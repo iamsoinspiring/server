@@ -1,143 +1,123 @@
-const FB = require('fb');
-const User = require('../models/user')
-const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt')
+const jwt = require('jsonwebtoken')
+const User = require('../models/user.js')
+const Image = require('../models/image.js')
+const key = process.env.SECRET_KEY
 
-class UserController {
-  static register(req, res) {
-    let token = req.body.token
+class Users{
+    static create(req,res){
+        let salt = bcrypt.genSaltSync(8);
+        let password = bcrypt.hashSync(req.body.password, salt);
 
-    FB.setAccessToken(token);
 
-    FB.api('me', { fields: ['id', 'name', 'email'], access_token: token }, response => {
-      User.findOne({
-        email: response.email
-      })
-
-        .then(userData => {
-          if (userData === null) {
-            User.create({
-              name: response.name,
-              email: response.email,
-              fbid: response.id,
-            })
-
-              .then(resultInput => {
-                let tokenUser = jwt.sign({ id: resultInput._id, name: resultInput.name, email: resultInput.email }, process.env.SECRET_KEY)
-
-                res
-                  .status(200)
-                  .json(tokenUser)
-              })
-
-              .catch (err => {
-                res
-                  .status(400)
-                  .json(err)
-              })
-          }
-          else {
-            let tokenUser = jwt.sign({ id: userData._id, name: userData.name, email: userData.email }, process.env.SECRET_KEY)
-
-                res
-                  .status(200)
-                  .json(tokenUser)
-          }
-        })
-
-        .catch(err => {
-          res
-            .status(400)
-            .json(err)
-        })
-    });
-  }
-
-  static signUp (req, res) {
-    User.findOne({
-      email: req.body.email
-    })
-
-      .then(userData => {
-        if (userData === null) {
-          User.create({
-            name: req.body.name,
+        User.create({
+            full_name: req.body.full_name,
+            username: req.body.username,
             email: req.body.email,
-            fbid: req.body.id,
-          })
+            password: password,
+            image_list:[]
 
-            .then(resultInput => {
-              let tokenUser = jwt.sign({ id: resultInput._id, name: resultInput.name, email: resultInput.email }, process.env.SECRET_KEY)
+        })
+        .then(user => {
+            res.status(200).json(user)
+        })
+        .catch(err => {
+            res.status(500).json(err.message)
+        })
+    }
 
-              res
-                .status(200)
-                .json(tokenUser)
+    static login(req,res){
+        User.find({$or: [{email: req.body.Uname_email}, {username: req.body.Uname_email}]})
+        .then(user => {
+            if(user.length !=0){
+                let checkPass = bcrypt.compareSync(req.body.password, user[0].password);
+                if(checkPass){
+                    //untuk sementara token taruh di headers, setelah ngerjain client ditaruh di localstorage
+                    let token = jwt.sign({ id: user[0]._id, fullname: user[0].full_name , email: user[0].email, image_list: user[0].image_list}, key);
+                    res.status(200).json({message:`Happy to see you again ${user[0].full_name}`, token: token})
+                } else {
+                    res.status(400).json('Wrong password')
+                }
+            } else {
+                res.status(400).json('Your email/username is wrong')
+            }
+        })
+        .catch(err => {
+            res.status(500).json(err.message)
+        })
+    }
+
+    static findUser(req,res){
+        let tokenUser = req.headers.token
+        let user = jwt.verify(tokenUser, key)
+
+        User.findOne({_id: user.id})
+        .populate('image_list')
+        .then(user => {
+            res.status(200).json(user)
+        })
+        .catch(err => {
+            res.status(500).json(err.message)
+        })
+    }
+
+    static update(req,res){
+        User.updateOne({_id: req.params.id},{
+            full_name: req.body.full_name,
+            username: req.body.username,
+            email: req.body.email,
+        })
+        .then(user => {
+            res.status(200).json('Profile succesfully updated!')
+
+        })
+        .catch(err => {
+            res.status(500).json(err.message)
+        })
+    }
+
+    static delete(req,res){
+        User.deleteOne({_id: req.params.id})
+        .then(result => {
+            res.status(200).json('Account deleted, Bye!')
+        })
+        .catch(err => {
+            res.status(500).json(err.message)
+        })
+    }
+
+    static uploadImage(req,res){
+        let tokenUser = req.headers.token
+        let user = jwt.verify(tokenUser, key)
+
+        Image.create({
+            url: req.file.cloudStoragePublicUrl,
+            description: req.body.desc
+        })
+        .then(image => {
+            User.update({_id: user.id},{$push: {image_list: image._id}})
+            .then(user => {
+               res.status(200).json({status:'Your file is successfully uploaded',image: image})
             })
-
-            .catch (err => {
-              res
-                .status(400)
-                .json(err)
-            })
-        }
-        else {
-          let tokenUser = jwt.sign({ id: resultInput._id, name: resultInput.name, email: resultInput.email }, process.env.SECRET_KEY)
-
-              res
-                .status(200)
-                .json(tokenUser)
-        }
-      })
-
-      .catch(err => {
-        res
-          .status(400)
-          .json(err)
-      })
-  }
-
-  static addCoordinate (req, res) {
-    let token = req.headers.tokenUser;
-
-    const decoded = jwt.verify(token, process.env.SECRET_KEY);
-
-    User.findOne({
-      id : decoded.id
-    })
-      .then(userData => {
-        if(userData !== null) {
-          User
-            .where({
-              _id : (decoded.id)
-            })
-            .update({
-              $SET : req.body
-            })
-
-            .then(updateData => {
-              res
-                .status (200)
-                .json("Data has been updated!")
-            })
-
             .catch(err => {
-              res
-                .status(400)
-                .json(err)
+                res.status(500).json(err.message)
             })
-        }
-        else {
-          res
-            .status(404)
-            .json("Data not found!")
-        }
-      })
+        })
+        .catch(err => {
+            res.status(500).json(err.message)
+        })
+    }
 
-      .catch(err => {
-        res
-          .status(400)
-          .json(err)
-      })
-  }
+    static getImage(req,res){
+        Image.find({})
+        .then(image => {
+            res.send(image)
+        })
+        .catch(err => {
+            res.status(500).json(err.message)
+        })
+    }
 }
 
-module.exports = UserController
+module.exports = Users
+>>>>>>> 17f3838e095154dbd1315c0527f65261519d9edd
