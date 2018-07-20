@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt')
+const bcrypt = require('bcryptjs')
 const jwt = require('jsonwebtoken')
 const User = require('../models/user.js')
 const Image = require('../models/image.js')
@@ -29,7 +29,7 @@ class Users{
     static login(req,res){
         User.find({$or: [{email: req.body.Uname_email}, {username: req.body.Uname_email}]})
         .then(user => {
-            if(user.length !=0){
+            if(user.length !== 0){
                 let checkPass = bcrypt.compareSync(req.body.password, user[0].password);
                 if(checkPass){
                     //untuk sementara token taruh di headers, setelah ngerjain client ditaruh di localstorage
