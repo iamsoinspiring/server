@@ -7,7 +7,7 @@ class Quotes {
   static randomquotes(req, res) {
     console.log(process.env.SECRET_KEY)
     axios.get(`https://talaikis.com=${process.env.SECRET_KEY}`)
-      .then(response => {
+.then(response => {
         res
           .status(200)
           .json(response.data)
