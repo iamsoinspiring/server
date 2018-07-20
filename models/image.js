@@ -11,4 +11,6 @@ let imageSchema = new Schema({
 
 let Image = mongoose.model('Image', imageSchema)
 
+
 module.exports = Image
+
