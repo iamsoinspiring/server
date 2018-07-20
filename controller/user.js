@@ -120,4 +120,4 @@ class Users{
 }
 
 module.exports = Users
->>>>>>> 17f3838e095154dbd1315c0527f65261519d9edd
+

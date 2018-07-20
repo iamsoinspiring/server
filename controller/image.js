@@ -5,9 +5,9 @@ const User = require('../models/user')
 
 class Quotes {
   static randomquotes(req, res) {
-    console.log(process.env.TM_KEY)
-    axios.get(`https://talaikis.com=${process.env.TM_KEY}`)
-      .then(response => {
+    console.log(process.env.SECRET_KEY)
+    axios.get(`https://talaikis.com=${process.env.SECRET_KEY}`)
+.then(response => {
         res
           .status(200)
           .json(response.data)
