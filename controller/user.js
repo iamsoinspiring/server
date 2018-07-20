@@ -8,8 +8,8 @@ class Users{
     static create(req,res){
         let salt = bcrypt.genSaltSync(8);
         let password = bcrypt.hashSync(req.body.password, salt);
-        
-        
+
+
         User.create({
             full_name: req.body.full_name,
             username: req.body.username,
@@ -72,7 +72,7 @@ class Users{
         })
         .then(user => {
             res.status(200).json('Profile succesfully updated!')
-            
+
         })
         .catch(err => {
             res.status(500).json(err.message)
@@ -123,3 +123,4 @@ class Users{
 }
 
 module.exports = Users
+
